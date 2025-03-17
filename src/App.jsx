@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import axios from "axios";
 import "./App.css";
 
 function App() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = React.useState({
     brand: "",
     product_type: "",
     product_tags: "",
@@ -17,28 +15,29 @@ function App() {
   });
 
   const fetchProducts = async () => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const params = new URLSearchParams();
-      for (const key in filters) {
-        if (filters[key]) {
-          params.append(key, filters[key]);
-        }
+    const params = new URLSearchParams();
+    for (const key in filters) {
+      if (filters[key]) {
+        params.append(key, filters[key]);
       }
-
-      const response = await axios.get(
-        `http://makeup-api.herokuapp.com/api/v1/products.json?${params.toString()}`
-      );
-      setProducts(response.data);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-      setError("Failed to fetch products. Please try again later.");
-    } finally {
-      setLoading(false);
     }
+
+    const response = await axios.get(
+      `http://makeup-api.herokuapp.com/api/v1/products.json?${params.toString()}`
+    );
+    return response.data;
   };
+
+  const {
+    data: products,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
+    queryKey: ["products", filters],
+    queryFn: fetchProducts,
+  });
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -50,12 +49,8 @@ function App() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    fetchProducts();
+    refetch();
   };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
 
   return (
     <div className="App">
@@ -113,11 +108,11 @@ function App() {
         <button type="submit">Search</button>
       </form>
 
-      {loading && <div className="loading">Loading...</div>}
-      {error && <div className="error">{error}</div>}
+      {isLoading && <div className="loading">Loading...</div>}
+      {isError && <div className="error">{error.message}</div>}
 
       <div className="products">
-        {products.map((product) => (
+        {products?.map((product) => (
           <div key={product.id} className="product">
             <img src={product.image_link} alt={product.name} />
             <h2>{product.name}</h2>
@@ -125,7 +120,7 @@ function App() {
             <p>${product.price}</p>
             <p>Rating: {product.rating}</p>
             <p>{product.product_type}</p>
-            <p>Tags: {product.tag_list.join(", ")}</p>
+            <p>Tags: {product.tag_list?.join(", ")}</p>
           </div>
         ))}
       </div>
