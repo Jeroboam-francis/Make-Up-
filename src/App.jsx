@@ -30,7 +30,7 @@ function App() {
 
     try {
       const response = await axios.get(
-        `http://makeup-api.herokuapp.com/api/v1/products.json?${params.toString()}`
+        `https://makeup-api.herokuapp.com/api/v1/products.json?${params.toString()}`
       );
       return response.data;
     } catch (error) {
